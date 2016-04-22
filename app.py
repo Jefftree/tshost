@@ -58,6 +58,7 @@ with open('tasks.pickle', 'rb') as handle:
   tasks = pickle.load(handle)
 
 def persist():
+    # Move to redis when performance becomes an issue
     with open('tasks.pickle', 'wb') as handle:
         pickle.dump(tasks, handle)
 
