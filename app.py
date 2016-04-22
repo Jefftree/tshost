@@ -12,6 +12,8 @@ from datetime import timedelta
 from flask import make_response, request, current_app
 from functools import update_wrapper
 
+import pickle
+
 
 try:
     unicode = unicode
@@ -37,7 +39,8 @@ def make_public_task(task):
             new_task[field] = task[field]
     return new_task
 
-tasks = {
+"""
+tasks_format = {
         1: {
             'id': 1,
             'title': u'Todo Project',
@@ -47,29 +50,20 @@ tasks = {
             'when' : 'Now',
             'where' : ["Desktop"],
             'done': False
-            },
-        2: {
-            'id': 2,
-            'title': u'Mobile dev',
-            'description': u'',
-            'status' : 'Backlog',
-            'what' : ["Project", "Fun"],
-            'when' : 'Daily',
-            'where' : ["Mobile"],
-            'done': False
-            },
-        3: {
-            'id': 3,
-            'title': u'Fun',
-            'description': u'Fun stuff',
-            'status' : 'Backlog',
-            'what' : ["Project", "Fun"],
-            'when' : 'Daily',
-            'where' : ["Desktop"],
-            'done': False
             }
-
         }
+"""
+
+with open('tasks.pickle', 'rb') as handle:
+  tasks = pickle.load(handle)
+
+def persist():
+    with open('tasks.pickle', 'wb') as handle:
+        pickle.dump(tasks, handle)
+
+
+
+
 
 @app.errorhandler(404)
 def not_found(error):
@@ -100,6 +94,7 @@ def create_task():
             'done': False
             }
     tasks[len(tasks) + 1] = task;
+    persist()
     return jsonify({'task': task}), 201
 
 @app.route('/todo/tasks/<int:task_id>', methods=['PUT'])
@@ -117,11 +112,13 @@ def update_task(task_id):
     tasks[task_id]['description'] = request.json.get('description', tasks[task_id]['description'])
     tasks[task_id]['when'] = request.json.get('when', tasks[task_id]['when'])
     tasks[task_id]['status'] = request.json.get('status', tasks[task_id]['status'])
+    persist()
     return jsonify({'task': tasks[task_id]})
 
 @app.route('/todo/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     if task_id in tasks: tasks[task_id]['done'] = True
+    persist()
     return jsonify({'success': True})
 
 
