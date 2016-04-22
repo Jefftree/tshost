@@ -45,17 +45,17 @@ tasks = {
             'status' : 'Backlog',
             'what' : ["Fun"],
             'when' : 'Now',
-            'where' : ["Computer"],
+            'where' : ["Desktop"],
             'done': False
             },
         2: {
             'id': 2,
-            'title': u'Learn Python',
-            'description': u'Need to find a good Python tutorial on the web',
+            'title': u'Mobile dev',
+            'description': u'',
             'status' : 'Backlog',
             'what' : ["Project", "Fun"],
             'when' : 'Daily',
-            'where' : ["Computer"],
+            'where' : ["Mobile"],
             'done': False
             },
         3: {
@@ -65,7 +65,7 @@ tasks = {
             'status' : 'Backlog',
             'what' : ["Project", "Fun"],
             'when' : 'Daily',
-            'where' : ["Computer"],
+            'where' : ["Desktop"],
             'done': False
             }
 
@@ -78,7 +78,7 @@ def not_found(error):
 @app.route('/todo/tasks/', methods=['GET'])
 def get_tasks():
     # return jsonify({'tasks': [make_public_task(task) for task in tasks]})
-    return jsonify({'tasks': list(tasks.values())})
+    return jsonify({'tasks': [task for task in tasks.values() if task['done']== False]})
 
 
 @app.route('/todo/tasks/<int:task_id>', methods=['GET'])
@@ -96,7 +96,8 @@ def create_task():
             'title': request.json['title'],
             'description': request.json.get('description', ""),
             'when': request.json.get('when', ""),
-            'status': 'Backlog'
+            'status': 'Backlog',
+            'done': False
             }
     tasks[len(tasks) + 1] = task;
     return jsonify({'task': task}), 201
@@ -120,7 +121,7 @@ def update_task(task_id):
 
 @app.route('/todo/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    if task_id in tasks: del tasks[task_id]
+    if task_id in tasks: tasks[task_id]['done'] = True
     return jsonify({'success': True})
 
 
