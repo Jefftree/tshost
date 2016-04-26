@@ -38,6 +38,9 @@ def make_public_task(task):
             new_task[field] = task[field]
     return new_task
 
+def insert_timestamp():
+    return datetime.now().isoformat()
+
 """
 tasks_format = {
         1: {
@@ -68,7 +71,7 @@ def not_found(error):
 @app.route('/todo/tasks/', methods=['GET'])
 def get_tasks():
     # return jsonify({'tasks': [make_public_task(task) for task in tasks]})
-    return jsonify({'tasks': [task for task in tasks.values() if task['done']== False]})
+    return jsonify({'tasks': [task for task in tasks.values() if task['status'] != "Completed"]})
 
 
 @app.route('/todo/tasks/<int:task_id>', methods=['GET'])
@@ -86,10 +89,10 @@ def create_task():
             'title': request.json['title'],
             'description': request.json.get('description', ""),
             'when': request.json.get('when', ""),
+            'what': request.json.get('what', ""),
             'status': 'Backlog',
-            'created': datetime.now().isoformat(),
-            'updated': datetime.now().isoformat(),
-            'done': False
+            'created': insert_timestamp(),
+            'updated': insert_timestamp(),
             }
     tasks[len(tasks) + 1] = task;
     persist()
@@ -109,14 +112,16 @@ def update_task(task_id):
     tasks[task_id]['title'] = request.json.get('title', tasks[task_id]['title'])
     tasks[task_id]['description'] = request.json.get('description', tasks[task_id]['description'])
     tasks[task_id]['when'] = request.json.get('when', tasks[task_id]['when'])
+    tasks[task_id]['what'] = request.json.get('what', tasks[task_id]['what'])
     tasks[task_id]['status'] = request.json.get('status', tasks[task_id]['status'])
-    tasks[task_id]['updated'] = datetime.now().isoformat()
+    tasks[task_id]['updated'] = insert_timestamp()
     persist()
     return jsonify({'task': tasks[task_id]})
 
 @app.route('/todo/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    if task_id in tasks: tasks[task_id]['done'] = True
+    if task_id in tasks: tasks[task_id]['status'] = "Completed"
+    tasks[task_id]['completed'] = insert_timestamp()
     persist()
     return jsonify({'success': True})
 
