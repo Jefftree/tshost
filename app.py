@@ -8,12 +8,11 @@ from flask.ext.cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-from datetime import timedelta
 from flask import make_response, request, current_app
 from functools import update_wrapper
 
+from datetime import datetime
 import pickle
-
 
 try:
     unicode = unicode
@@ -62,10 +61,6 @@ def persist():
     with open('tasks.pickle', 'wb') as handle:
         pickle.dump(tasks, handle)
 
-
-
-
-
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
@@ -92,6 +87,8 @@ def create_task():
             'description': request.json.get('description', ""),
             'when': request.json.get('when', ""),
             'status': 'Backlog',
+            'created': datetime.now().isoformat(),
+            'updated': datetime.now().isoformat(),
             'done': False
             }
     tasks[len(tasks) + 1] = task;
@@ -113,6 +110,7 @@ def update_task(task_id):
     tasks[task_id]['description'] = request.json.get('description', tasks[task_id]['description'])
     tasks[task_id]['when'] = request.json.get('when', tasks[task_id]['when'])
     tasks[task_id]['status'] = request.json.get('status', tasks[task_id]['status'])
+    tasks[task_id]['updated'] = datetime.now().isoformat()
     persist()
     return jsonify({'task': tasks[task_id]})
 
@@ -121,7 +119,6 @@ def delete_task(task_id):
     if task_id in tasks: tasks[task_id]['done'] = True
     persist()
     return jsonify({'success': True})
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
