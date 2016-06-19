@@ -8,7 +8,8 @@ from flask.ext.cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-from flask import make_response, request, current_app
+from flask import make_response, request, current_app, Response
+from flask.ext.login import LoginManager, UserMixin, login_required
 from functools import update_wrapper
 
 from datetime import datetime
@@ -56,6 +57,37 @@ tasks_format = {
         }
 """
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+class User(UserMixin):
+    # proxy for a database of users
+    user_database = {"qwerty": ("qwerty", "s")}
+
+    def __init__(self, username, password):
+        self.id = username
+        self.password = password
+
+    @classmethod
+    def get(cls,id):
+        return cls.user_database.get(id)
+
+@login_manager.request_loader
+def load_user(request):
+    token = request.headers.get('Authorization')
+    if token is None:
+        token = request.args.get('token')
+
+    if token is not None:
+        username,password = token.split(":") # naive token
+        user_entry = User.get(username)
+        if (user_entry is not None):
+            user = User(user_entry[0],user_entry[1])
+            if (user.password == password):
+                return user
+    return None
+
 with open('tasks.pickle', 'rb') as handle:
   tasks = pickle.load(handle)
 
@@ -69,18 +101,21 @@ def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
 @app.route('/todo/tasks/', methods=['GET'])
+@login_required
 def get_tasks():
     # return jsonify({'tasks': [make_public_task(task) for task in tasks]})
     return jsonify({'tasks': [task for task in tasks.values() if task['status'] != "Completed"]})
 
 
 @app.route('/todo/tasks/<int:task_id>', methods=['GET'])
+@login_required
 def get_task(task_id):
     if task_id not in tasks:
         abort(404)
     return jsonify({'task': tasks[task_id]})
 
 @app.route('/todo/tasks/', methods=['POST'])
+@login_required
 def create_task():
     if not request.json or not 'title' in request.json:
         abort(400)
@@ -99,6 +134,7 @@ def create_task():
     return jsonify({'task': task}), 201
 
 @app.route('/todo/tasks/<int:task_id>', methods=['PUT'])
+@login_required
 def update_task(task_id):
     if task_id not in tasks:
         abort(404)
@@ -119,6 +155,7 @@ def update_task(task_id):
     return jsonify({'task': tasks[task_id]})
 
 @app.route('/todo/tasks/<int:task_id>', methods=['DELETE'])
+@login_required
 def delete_task(task_id):
     if task_id in tasks: tasks[task_id]['status'] = "Completed"
     tasks[task_id]['completed'] = insert_timestamp()
